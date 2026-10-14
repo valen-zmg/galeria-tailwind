@@ -1,6 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\CategoriaController;
+
 
 Route::get('/', function () {
     $fotos = [
@@ -14,3 +16,24 @@ Route::get('/', function () {
 
     return view('galeria', compact('fotos'));
 });
+
+Route::get('categorias', [CategoriaController::class, 'getCategorias'])
+    ->name('getcategorias');
+
+Route::post('create/categoria', [CategoriaController::class, 'createCategoria'])
+    ->name('categoria.create');
+
+Route::put("update/categoria/{id}", [CategoriaController::class,''])
+    ->name("categoria.update");
+
+Route::delete("delete/categoria/{id}", [CategoriaController::class, 'deleteCategoria'])
+    ->name("categoria.delete");
+
+    //hacer como el de nueva categoria
+    //otro componente para actualizar categoria y eliminar categoria
+
+Route::put('update/categoria/{id}', [CategoriaController::class, 'updateCategoria'])
+    ->name('categoria.update');
+
+Route::delete('delete/categoria/{id}', [CategoriaController::class, 'deleteCategoria'])
+    ->name('categoria.delete');    
