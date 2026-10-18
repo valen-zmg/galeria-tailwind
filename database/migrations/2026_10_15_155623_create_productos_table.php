@@ -13,8 +13,14 @@ return new class extends Migration
     {
         Schema::create('productos', function (Blueprint $table) {
             $table->id();
+            $table->string('producto');
+            $table->decimal('precio', 8, 2);
+            $table->integer('stock');
+            $table->unsignedBigInteger('categoria_id');
+            $table->foreign('categoria_id')->references('id')->on('categoria');
             $table->timestamps();
         });
+
     }
 
     /**
