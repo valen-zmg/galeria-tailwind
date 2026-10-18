@@ -1,7 +1,8 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CategoriaController;
+use App\Http\Controllers\ProductoController;
+use Illuminate\Support\Facades\Route;
 
 
 Route::get('/', function () {
@@ -36,4 +37,17 @@ Route::put('update/categoria/{id}', [CategoriaController::class, 'updateCategori
     ->name('categoria.update');
 
 Route::delete('delete/categoria/{id}', [CategoriaController::class, 'deleteCategoria'])
-    ->name('categoria.delete');    
+    ->name('categoria.delete');
+
+Route::get('productos', [ProductoController::class, 'getProductos'])
+    ->name('productos.get');
+
+Route::post('productos/create', [ProductoController::class, 'createProducto'])
+    ->name('productos.create');
+
+Route::put('productos/update/{id}', [ProductoController::class, 'updateProducto'])
+    ->name('productos.update');
+
+Route::delete('productos/delete/{id}', [ProductoController::class, 'deleteProducto'])
+    ->name('productos.delete');
+    
