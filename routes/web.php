@@ -3,6 +3,7 @@
 use App\Http\Controllers\CategoriaController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\ClienteController;
+use App\Http\Controllers\VentaController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -65,3 +66,16 @@ Route::put('clientes/update/{id}', [ClienteController::class, 'updateCliente'])
 
 Route::delete('clientes/delete/{id}', [ClienteController::class, 'deleteCliente'])
     ->name('clientes.delete');    
+
+    //modulo ventas
+Route::get('ventas', [VentaController::class, 'getVentas'])
+    ->name('ventas.get');
+
+Route::post('ventas/create', [VentaController::class, 'createVenta'])
+    ->name('ventas.create');
+
+Route::put('ventas/update/{id}', [VentaController::class, 'updateVenta'])
+    ->name('ventas.update');
+    
+Route::delete('ventas/delete/{id}', [VentaController::class, 'deleteVenta'])
+    ->name('ventas.delete');    

@@ -8,6 +8,7 @@
             <a class="nav-item nav-link active" href="{{ route('getcategorias') }}">Categorias <span class="sr-only">(current)</span></a>
             <a class="nav-item nav-link" href="{{ route('productos.get') }}">Productos</a>
             <a class="nav-item nav-link" href="{{ route('clientes.get') }}">Clientes</a>
+            <a class="nav-item nav-link" href="{{ route('ventas.get') }}">Ventas</a>
         </div>
     </div>
 </nav>
