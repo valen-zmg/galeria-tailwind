@@ -33,9 +33,7 @@
                         <th>id</th>
                         <th>cliente</th>
                         <th>fecha</th>
-                        <th>producto</th>
-                        <th>cant.</th>
-                        <th>precio unit.</th>
+                        <th>productos</th>
                         <th>estado</th>
                         <th>total</th>
                         <th>Acciones</th>
@@ -43,14 +41,15 @@
                 </thead>
                 <tbody>
                     @foreach ($ventas as $v)
-                        @php $d = $v->detalles->first(); @endphp
                         <tr>
                             <td>{{ $v->id }}</td>
                             <td>{{ $v->cliente->nombre }}</td>
                             <td>{{ $v->fecha_venta }}</td>
-                            <td>{{ $d?->producto->producto }}</td>
-                            <td>{{ $d?->cantidad }}</td>
-                            <td>${{ $d?->precio_unitario }}</td>
+                            <td>
+                                @foreach ($v->detalles as $d)
+                                    <div>{{ $d->producto->producto }} x{{ $d->cantidad }} (${{ $d->precio_unitario }})</div>
+                                @endforeach
+                            </td>
                             <td>
                                 @if ($v->estado == 'pendiente')
                                     <span class="badge badge-warning">pendiente</span>
@@ -72,7 +71,6 @@
         </div>
     </div>
 
-    {{-- Modal crear --}}
     <div class="modal fade" id="createVenta" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
@@ -101,18 +99,22 @@
                             <option value="cancelada" {{ old('inputEstado') == 'cancelada' ? 'selected' : '' }}>Cancelada</option>
                         </select>
 
-                        <label>Producto</label>
-                        <select class="form-control mb-2" name="inputProducto_id">
-                            <option value="">Selecciona producto</option>
-                            @foreach ($productos as $p)
-                                <option value="{{ $p->id }}" {{ old('inputProducto_id') == $p->id ? 'selected' : '' }}>
-                                    {{ $p->producto }} (${{ $p->precio }} - stock: {{ $p->stock }})
-                                </option>
-                            @endforeach
-                        </select>
-
-                        <label>Cantidad</label>
-                        <input type="number" min="1" class="form-control mb-2" name="inputCantidad" placeholder="Cantidad" value="{{ old('inputCantidad') }}">
+                        <label>Productos (puedes elegir hasta 3)</label>
+                        @for ($i = 0; $i < 3; $i++)
+                            <div class="form-row mb-2">
+                                <div class="col-8">
+                                    <select class="form-control" name="productos[{{ $i }}][id]">
+                                        <option value="">Selecciona producto</option>
+                                        @foreach ($productos as $p)
+                                            <option value="{{ $p->id }}">{{ $p->producto }} (${{ $p->precio }} - stock: {{ $p->stock }})</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-4">
+                                    <input type="number" min="1" class="form-control" name="productos[{{ $i }}][cantidad]" placeholder="Cantidad">
+                                </div>
+                            </div>
+                        @endfor
 
                         @if ($errors->any())
                             <ul class="text-danger small mb-0">
@@ -131,7 +133,6 @@
         </div>
     </div>
 
-    {{-- Modales actualizar y eliminar --}}
     @foreach ($ventas as $v)
         <div class="modal fade" id="updateVenta{{ $v->id }}" tabindex="-1" role="dialog" aria-hidden="true">
             <div class="modal-dialog" role="document">

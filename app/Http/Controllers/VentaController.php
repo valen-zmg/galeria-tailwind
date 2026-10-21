@@ -12,11 +12,11 @@ use Illuminate\Support\Facades\DB;
 class VentaController extends Controller
 {
     public function getVentas()
-    {   //ventas y sus relaciones con cliente y detalles.producto
+    {
         $ventas = Venta::with(['cliente', 'detalles.producto'])->latest()->get();
         $clientes = Cliente::all();
         $productos = Producto::all();
-        //retorna a la vista de ventas
+
         return view('ventas', compact('ventas', 'clientes', 'productos'));
     }
 
@@ -26,53 +26,75 @@ class VentaController extends Controller
             'inputCliente_id' => 'required|exists:clientes,id',
             'inputFecha' => 'required|date',
             'inputEstado' => 'required|in:pendiente,confirmada,cancelada',
-            'inputProducto_id' => 'required|exists:productos,id',
-            'inputCantidad' => 'required|integer|min:1',
         ], [
             'inputCliente_id.required' => 'Selecciona un cliente.',
             'inputFecha.required' => 'La fecha es obligatoria.',
-            'inputProducto_id.required' => 'Selecciona un producto.',
-            'inputCantidad.required' => 'La cantidad es obligatoria.',
-            'inputCantidad.min' => 'La cantidad debe ser al menos 1.',
         ]);
 
-        $producto = Producto::findOrFail($request->inputProducto_id);
-        $cantidad = (int) $request->inputCantidad;
+        //solo las filas donde se eligió un producto
+        $items = [];
+        foreach ($request->productos as $fila) {
+            if (!empty($fila['id'])) {
+                if (empty($fila['cantidad']) || $fila['cantidad'] < 1) {
+                    return back()->withInput()->withErrors([
+                        'productos' => 'Escribe la cantidad en cada producto elegido.'
+                    ]);
+                }
+                //repiten un producto, se suman las cantidades
+                $items[$fila['id']] = ($items[$fila['id']] ?? 0) + (int) $fila['cantidad'];
+            }
+        }
 
-        //validaciones de stock
-        if ($producto->stock <= 0) {
+        if (count($items) == 0) {
             return back()->withInput()->withErrors([
-                'inputProducto_id' => "El producto {$producto->producto} no tiene stock."
+                'productos' => 'Agrega al menos un producto.'
             ]);
         }
-        if ($producto->stock < $cantidad) {
-            return back()->withInput()->withErrors([
-                'inputCantidad' => "Stock insuficiente. Disponible: {$producto->stock}."
-            ]);
+
+        //validación de stock de cada producto
+        $errores = [];
+        foreach ($items as $productoId => $cantidad) {
+            $prod = Producto::findOrFail($productoId);
+            if ($prod->stock <= 0) {
+                $errores[] = "El producto {$prod->producto} no tiene stock.";
+            } elseif ($prod->stock < $cantidad) {
+                $errores[] = "Stock insuficiente de {$prod->producto}. Disponible: {$prod->stock}.";
+            }
         }
-        //transacción para guardar
-        DB::transaction(function () use ($request, $producto, $cantidad) {
-            $total = $producto->precio * $cantidad;
-            //crear venta y detalle de venta
+        if (count($errores) > 0) {
+            return back()->withInput()->withErrors($errores);
+        }
+
+        DB::transaction(function () use ($request, $items) {
             $venta = Venta::create([
                 'cliente_id' => $request->inputCliente_id,
                 'fecha_venta' => $request->inputFecha,
                 'estado' => $request->inputEstado,
-                'total' => $total,
+                'total' => 0,
             ]);
 
-            DetalleVenta::create([
-                'venta_id' => $venta->id,
-                'producto_id' => $producto->id,
-                'cantidad' => $cantidad,
-                'precio_unitario' => $producto->precio,
-                'total' => $total,
-            ]);
+            $totalVenta = 0;
+            foreach ($items as $productoId => $cantidad) {
+                $prod = Producto::findOrFail($productoId);
+                $subtotal = $prod->precio * $cantidad;
 
-            //si una venta cancelada no descuenta stock
-            if ($request->inputEstado !== 'cancelada') {
-                $producto->decrement('stock', $cantidad);
+                DetalleVenta::create([
+                    'venta_id' => $venta->id,
+                    'producto_id' => $prod->id,
+                    'cantidad' => $cantidad,
+                    'precio_unitario' => $prod->precio,
+                    'total' => $subtotal,
+                ]);
+
+                $totalVenta += $subtotal;
+
+                //venta cancelada no descuenta stock
+                if ($request->inputEstado !== 'cancelada') {
+                    $prod->decrement('stock', $cantidad);
+                }
             }
+
+            $venta->update(['total' => $totalVenta]);
         });
 
         return redirect('/ventas')->with(['mensaje' => 'venta registrada']);
@@ -90,7 +112,7 @@ class VentaController extends Controller
         $anterior = $venta->estado;
         $nuevo = $request->inputEstado;
 
-        // Si se reactiva una venta cancelada, debe haber stock
+        //reactiva una venta cancelada, debe haber stock
         if ($anterior === 'cancelada' && $nuevo !== 'cancelada') {
             foreach ($venta->detalles as $d) {
                 if ($d->producto->stock < $d->cantidad) {
@@ -100,7 +122,7 @@ class VentaController extends Controller
                 }
             }
         }
-        //manipula inventario
+
         DB::transaction(function () use ($venta, $request, $anterior, $nuevo) {
             if ($anterior !== 'cancelada' && $nuevo === 'cancelada') {
                 foreach ($venta->detalles as $d) {
@@ -126,7 +148,7 @@ class VentaController extends Controller
     {
         $venta = Venta::with('detalles.producto')->findOrFail($id);
 
-        //si solo se eliminan ventas pendientes o canceladas
+        //eliminan ventas pendientes o canceladas
         if (!in_array($venta->estado, ['pendiente', 'cancelada'])) {
             return redirect('/ventas')->with([
                 'error' => 'Solo se pueden eliminar ventas pendientes o canceladas.'
@@ -134,7 +156,7 @@ class VentaController extends Controller
         }
 
         DB::transaction(function () use ($venta) {
-            //si venta pendiente tenía stock descontado se regresa
+            //venta pendiente tenía stock descontado se regresa
             if ($venta->estado === 'pendiente') {
                 foreach ($venta->detalles as $d) {
                     $d->producto->increment('stock', $d->cantidad);
