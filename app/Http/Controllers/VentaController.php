@@ -31,9 +31,9 @@ class VentaController extends Controller
             'inputFecha.required' => 'La fecha es obligatoria.',
         ]);
 
-        //solo las filas donde se eligió un producto
+        //solo las filas donde se eligió un producto (sin límite de filas)
         $items = [];
-        foreach ($request->productos as $fila) {
+        foreach ($request->productos ?? [] as $fila) {
             if (!empty($fila['id'])) {
                 if (empty($fila['cantidad']) || $fila['cantidad'] < 1) {
                     return back()->withInput()->withErrors([
@@ -51,7 +51,7 @@ class VentaController extends Controller
             ]);
         }
 
-        //validación de stock de cada producto
+        //stock de cada producto
         $errores = [];
         foreach ($items as $productoId => $cantidad) {
             $prod = Producto::findOrFail($productoId);

@@ -98,23 +98,28 @@
                             <option value="confirmada" {{ old('inputEstado') == 'confirmada' ? 'selected' : '' }}>Confirmada</option>
                             <option value="cancelada" {{ old('inputEstado') == 'cancelada' ? 'selected' : '' }}>Cancelada</option>
                         </select>
-
-                        <label>Productos (puedes elegir hasta 3)</label>
-                        @for ($i = 0; $i < 3; $i++)
-                            <div class="form-row mb-2">
-                                <div class="col-8">
-                                    <select class="form-control" name="productos[{{ $i }}][id]">
-                                        <option value="">Selecciona producto</option>
-                                        @foreach ($productos as $p)
-                                            <option value="{{ $p->id }}">{{ $p->producto }} (${{ $p->precio }} - stock: {{ $p->stock }})</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="col-4">
-                                    <input type="number" min="1" class="form-control" name="productos[{{ $i }}][cantidad]" placeholder="Cantidad">
-                                </div>
+                        <label>Productos</label>
+                            @for ($i = 0; $i < 10; $i++)
+                                <div @if ($i > 0) class="collapse" id="fila{{ $i }}" @endif>
+                                    <div class="form-row mb-2">
+                                        <div class="col-8">
+                                            <select class="form-control" name="productos[{{ $i }}][id]">
+                                                <option value="">Selecciona producto</option>
+                                                @foreach ($productos as $p)
+                                                    <option value="{{ $p->id }}">{{ $p->producto }} (${{ $p->precio }} - stock: {{ $p->stock }})</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                    <div class="col-4">
+                                <input type="number" min="1" class="form-control" name="productos[{{ $i }}][cantidad]" placeholder="Cantidad">
                             </div>
-                        @endfor
+                        </div>
+
+                    @if ($i < 9)
+                        <button type="button" class="btn btn-sm btn-outline-primary mb-2" data-toggle="collapse" data-target="#fila{{ $i + 1 }}"> + Agregar otro producto</button>
+                    @endif
+                                </div>
+                            @endfor
 
                         @if ($errors->any())
                             <ul class="text-danger small mb-0">
